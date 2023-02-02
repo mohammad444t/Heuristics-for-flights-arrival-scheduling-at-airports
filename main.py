@@ -261,3 +261,4 @@ def relax_and_solve(alp_instance: ALP):
 
 
 print(ex_alp_instance.relax_and_solve())
+print(ex_alp_instance.solve_cplex())

@@ -77,6 +77,7 @@ class ALP:
     def solve_cplex(self, time_limit=False):
 
         # Exact P1 Solver using IBM ILOG CPLEX
+        start_time = time.time()
         model = Model('P1')
         if time_limit:
             model.set_time_limit(self.compute_time_limit())
@@ -104,7 +105,7 @@ class ALP:
         gamma_indices = [(i, r) for i in range(1, n + 1) for r in range(1, m + 1)]
 
         # Define Variables
-        x = model.continuous_var_dict(x_indices, lb=0, name='x')
+        x = model.integer_var_dict(x_indices, lb=0, name='x')
         alpha = model.continuous_var_dict(alpha_indices, lb=0, name='alpha')
         beta = model.continuous_var_dict(beta_indices, lb=0, name='beta')
         y = model.binary_var_dict(y_indices, name='y')
@@ -148,7 +149,8 @@ class ALP:
             z_star = model.objective_value
             final_landing_times = sorted(landing_times)
 
-        return model, sol, pi_star, final_landing_times, z_star
+        elapsed_time = -start_time + time.time()
+        return model, sol, pi_star, final_landing_times, z_star, elapsed_time
 
     def compute_d(self):
         n = len(self.I)
@@ -465,7 +467,7 @@ class ALP:
 
                 if not feasibility_flag:
                     # Solve P1 with a time limit
-                    model, sol, pi_star1, final_landing_times, z_star1 = self.solve_cplex(time_limit=True)
+                    model, sol, pi_star1, final_landing_times, z_star1, elapsed_time1 = self.solve_cplex(time_limit=True)
                     if sol is not None:
                         if model.objective_value < z_star:
                             pi_star = pi_star1
@@ -474,6 +476,6 @@ class ALP:
                 RC += step
 
         elapsed_time = time.time() - start_time
-        return pi_star, z_star, final_landing_times, elapsed_time
+        return pi_star, z_star, sorted(final_landing_times), elapsed_time
 
 
