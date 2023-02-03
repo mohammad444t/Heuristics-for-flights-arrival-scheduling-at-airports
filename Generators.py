@@ -30,9 +30,6 @@ def generate_comparison_bar_plot(x, y1, y2, title, xlabel, ylabel, y1label, y2la
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    # Numbers of pairs of bars you want
-    N = 3
-
     # Data on X-axis
 
     # Specify the values of blue bars (height)
@@ -47,8 +44,8 @@ def generate_comparison_bar_plot(x, y1, y2, title, xlabel, ylabel, y1label, y2la
     width = 2
 
     # Plotting
-    ax.bar(ind, blue_bar, width, label='y1label')
-    ax.bar(sum_list_num(ind, width), orange_bar, width, label='y2label')
+    ax.bar(ind, blue_bar, width, label=y1label)
+    ax.bar(sum_list_num(ind, width), orange_bar, width, label=y2label)
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -61,5 +58,24 @@ def generate_comparison_bar_plot(x, y1, y2, title, xlabel, ylabel, y1label, y2la
 
     # Finding the best position for legends and putting it
     ax.legend(loc='best')
+    fig.show()
+    fig.savefig(f'{name}.svg', format='svg')
+
+
+def generate_bar_plot(x, y, title, xlabel, ylabel, name):
+
+    mpl.rc('font', family='Times New Roman')
+    mpl.rc('font', size=12)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    ax.bar(list_to_str_tuple(x), y)
+
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.set_ylim([0, 100])
+
+    # Finding the best position for legends and putting it
     fig.show()
     fig.savefig(f'{name}.svg', format='svg')

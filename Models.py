@@ -82,6 +82,8 @@ class ALP:
         model = Model('P1')
         if time_limit:
             model.set_time_limit(self.compute_time_limit())
+        else:
+            model.set_time_limit(10 * 60)
 
         # Inputs
         I = self.I
@@ -345,7 +347,7 @@ class ALP:
                 # Form and Solve the Relaxed Problem (P2):
                 feasibility_flag = True
                 for f in range(1, 4):  # Look back parameter: at least 1, at most 3
-                    print(f)
+                    # print(f)
 
                     model = Model('P2')
                     model.set_time_limit(self.compute_time_limit())
