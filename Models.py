@@ -1,9 +1,10 @@
+import random
 import time
 from Utilities import *
 from docplex.mp.model import Model
 import math
 
-
+random.seed(2)
 class ALP:
     def __init__(self, I: list, R: list, T: list, s: dict, E: list, L: list, c_plus: list, c_minus: list):
         # I: list of aircrafts (usually [1,...,n])
@@ -94,7 +95,7 @@ class ALP:
         E = self.E
         T = self.T
         L = self.L
-        M = 10000
+        M = 100000
 
         # Variable indices
         x_indices = [i for i in range(1, n + 1)]
@@ -182,7 +183,7 @@ class ALP:
         if m == 1:
             if n <= 150:
                 return max(4, n // 25)
-            elif 150 < n <= 150:
+            elif 150 < n <= 250:
                 return max(4, n // 50)
             else:
                 return max(4, n // 150)
@@ -203,14 +204,14 @@ class ALP:
 
         if m == 1:
             if n <= 100:
-                return 1
+                return 1  # default 1
             else:
-                return 2
+                return 2  # 2
         else:
             if n <= 250:
-                return 1
+                return 1  # 1
             else:
-                return 2
+                return 2  # 2
 
     def solve_p1_given_pi(self, pi: list):
 
@@ -227,7 +228,7 @@ class ALP:
         E = self.E
         T = self.T
         L = self.L
-        M = 10000
+        M = 100000
         sequence = pi[0]
         runways = pi[1]
 
@@ -297,14 +298,16 @@ class ALP:
         AR = self.compute_AR()
         d = self.compute_d()
         time_limit = self.compute_time_limit()
-        RC = RR + 1
+        RC = RR
         l = 1
         f = 1
         step = math.ceil((n - 2 * RR - 1) / (d - 1))
 
         start_time = time.time()
         pi = self.etlt()
+        ch1 = time.time()
         model, sol, z_pi = self.solve_p1_given_pi(pi)
+        print(time.time()-ch1)
         z_star = z_pi
         pi_star = pi.copy()
         final_landing_times = []
@@ -312,17 +315,17 @@ class ALP:
             return z_star
         else:
             for _ in range(d):
-                sequence = pi_star[0]
-                runways = pi_star[1]
-                relaxed_aircraft = sequence[RC - RR - 1: min(n, RC + RR)]
-                non_relaxed_left = sequence[: RC - RR - 1]
-                non_relaxed_right = sequence[min(n, RC + RR):]
+                sequence = pi_star[0].copy()
+                runways = pi_star[1].copy()
+                relaxed_aircraft = sequence[RC - RR: min(n, RC + RR + 1)]
+                non_relaxed_left = sequence[: RC - RR]
+                non_relaxed_right = sequence[min(n, RC + RR + 1):]
                 left_indices = list(range(len(non_relaxed_left)))
                 relaxed_indices = [len(left_indices) + i for i in range(len(relaxed_aircraft))]
                 right_indices = [len(left_indices) + len(relaxed_indices) + i for i in range(len(non_relaxed_right))]
-                relaxed_runways = runways[RC - RR - 1: min(n, RC + RR)]
-                left_runways = runways[: RC - RR - 1]
-                right_runways = runways[min(n, RC + RR):]
+                relaxed_runways = runways[RC - RR: min(n, RC + RR + 1)]
+                left_runways = runways[: RC - RR]
+                right_runways = runways[min(n, RC + RR + 1):]
                 left_last_aircraft_in_runways = [None for _ in range(m)]
                 right_first_aircraft_runways = [None for _ in range(m)]
                 left_aircraft_in_runways = dict()
@@ -339,19 +342,10 @@ class ALP:
                     right_first_aircraft_runways[index] = None if runway not in right_runways else non_relaxed_right[
                         right_runways.index(runway)]
 
-                # print(f'left: {non_relaxed_left}')
-                # print(f'relaxed: {relaxed_aircraft}')
-                # print(f'right: {non_relaxed_right}')
-                # for runway in R:
-                #     print(f'runway {runway} aircraft left: {left_aircraft_in_runways[runway]}')
-                #     print(f'runway {runway} aircraft right: {right_aircraft_in_runways[runway]}')
-                # print(f'last left: {left_last_aircraft_in_runways}')
-                # print(f'first right: {right_first_aircraft_runways}')
-                # print('\n')
-
                 # Form and Solve the Relaxed Problem (P2):
                 feasibility_flag = True
                 for f in range(1, 4):  # Look back parameter: at least 1, at most 3
+                    print(f)
 
                     model = Model('P2')
                     model.set_time_limit(self.compute_time_limit())
@@ -397,12 +391,12 @@ class ALP:
                     # Colored dashed arrows from the left
                     for r in R:
                         for j in relaxed_x_indices:
-                            for i in left_x_indices:
+                            for i in left_x_indices[-3:]:
                                 model.add_constraint(x[j] - x[i] >= s[(i, j)] * (gamma[(i, r)] + gamma[(j, r)] - 1))
 
                     # Colored dashed arrows to the right
                     for r in R:
-                        for j in right_x_indices:
+                        for j in right_x_indices[:3]:
                             for i in relaxed_x_indices:
                                 model.add_constraint(x[j] - x[i] >= s[(i, j)] * (gamma[(i, r)] + gamma[(j, r)] - 1))
 
@@ -411,16 +405,22 @@ class ALP:
                         must_satisfy_s_aircraft = list(
                             reversed(left_aircraft_in_runways[runway] + right_aircraft_in_runways[runway]))
                         for aircraft in must_satisfy_s_aircraft:
-                            for look_back in range(f):
-                                if must_satisfy_s_aircraft.index(aircraft) + f < len(must_satisfy_s_aircraft):
-                                    prev_aircraft = must_satisfy_s_aircraft[must_satisfy_s_aircraft.index(aircraft) + f]
+                            for look_back in range(1, f + 1):
+                                if must_satisfy_s_aircraft.index(aircraft) + look_back < len(must_satisfy_s_aircraft):
+                                    prev_aircraft = must_satisfy_s_aircraft[must_satisfy_s_aircraft.index(aircraft) + look_back]
                                     model.add_constraint(x[aircraft] - x[prev_aircraft] >= s[(prev_aircraft, aircraft)])
 
                     # Fixed gammas
                     for aircraft, runway in zip(left_x_indices, left_runways):
                         model.add_constraint(gamma[(aircraft, runway)] == 1)
+                        for r in R:
+                            if r != runway:
+                                model.add_constraint(gamma[(aircraft, r)] == 0)
                     for aircraft, runway in zip(right_x_indices, right_runways):
                         model.add_constraint(gamma[(aircraft, runway)] == 1)
+                        for r in R:
+                            if r != runway:
+                                model.add_constraint(gamma[(aircraft, r)] == 0)
 
                     sol = model.solve()
                     # model.print_solution()
