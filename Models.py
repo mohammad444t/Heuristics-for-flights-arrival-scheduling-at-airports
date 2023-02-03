@@ -4,7 +4,7 @@ from Utilities import *
 from docplex.mp.model import Model
 import math
 
-random.seed(2)
+
 class ALP:
     def __init__(self, I: list, R: list, T: list, s: dict, E: list, L: list, c_plus: list, c_minus: list):
         # I: list of aircrafts (usually [1,...,n])
